@@ -8,9 +8,11 @@ import Sponsors from '@/components/home/Sponsors';
 import Mission from '@/components/home/Mission';
 import CodingNews from '@/components/home/CodingNews';
 import PastCollaborations from '@/components/home/PastCollaborations';
+import BackToTop from '@/components/BackToTop';
 
 export default function Home() {
   return (
+    <>
     <main className="min-h-screen bg-background">
       <FloatingParticles />
       <Hero />
@@ -43,5 +45,7 @@ export default function Home() {
         <Mission />
       </SectionEntrance>
     </main>
+    <BackToTop />
+    </>
   );
 }
