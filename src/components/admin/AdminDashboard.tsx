@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Shield, Database, X } from 'lucide-react';
-import { doc, updateDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, where, setDoc, arrayRemove, increment, arrayUnion, getDoc, limit, startAfter, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, where, setDoc, arrayRemove, increment, arrayUnion, getDoc, limit, startAfter, QueryDocumentSnapshot, DocumentData, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
 import { determineBadges, getBadgeXp } from '@/lib/point-calculation';
@@ -344,15 +344,17 @@ export default function AdminDashboard({ initialAuth = false }: { initialAuth?: 
         }
         if (!confirm(`Demote ${targetAdmin.name} to Member?`)) return;
         try {
+            const batch = writeBatch(db);
             if (targetAdmin.uid) {
-                await setDoc(doc(db, 'members', targetAdmin.uid), {
+                batch.set(doc(db, 'members', targetAdmin.uid), {
                     ...targetAdmin,
                     role: 'member'
                 }, { merge: true });
             }
             if (targetAdmin.email) {
-                await deleteDoc(doc(db, 'admins', targetAdmin.email));
+                batch.delete(doc(db, 'admins', targetAdmin.email));
             }
+            await batch.commit();
             alert("Admin demoted to Member.");
             fetchAdmins();
         } catch (error) {
@@ -365,11 +367,18 @@ export default function AdminDashboard({ initialAuth = false }: { initialAuth?: 
         if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
         try {
             const targetUser = users.find(u => u.uid === userId);
-            const collectionName = targetUser?.role === 'admin' ? 'admins' : 'members';
-            await deleteDoc(doc(db, collectionName, userId));
+            const batch = writeBatch(db);
+            
+            batch.delete(doc(db, 'members', userId));
+            
+            if (targetUser?.email) {
+                batch.delete(doc(db, 'admins', targetUser.email));
+            }
+            
+            await batch.commit();
             setUsers(prev => prev.filter(u => u.uid !== userId));
             if (selectedUser?.uid === userId) setSelectedUser(null);
-            alert("User deleted successfully.");
+            alert("User deleted from all records.");
         } catch (error) {
             console.error("Error deleting user:", error);
             alert("Failed to delete user.");
