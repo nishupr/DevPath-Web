@@ -121,7 +121,7 @@ const ToastMessage = ({ n, removeNotification }: { n: GamificationNotification, 
 };
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
-    const { user, updateUserProfile } = useAuth();
+    const { user, awardPoints } = useAuth();
     const [notifications, setNotifications] = useState<GamificationNotification[]>([]);
 
     const xp = user?.points || 0;
@@ -138,13 +138,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         options: AddXpOptions = {}
     ) => {
         const shouldPersist = options.persist !== false;
-        const newXp = xp + amount;
-        const currentLevel = Math.floor(Math.sqrt(xp / 100));
+        const currentXp = user?.points || 0;
+        const newXp = currentXp + amount;
+        const currentLevel = Math.floor(Math.sqrt(currentXp / 100));
         const newLevel = Math.floor(Math.sqrt(newXp / 100));
         
         if (user && shouldPersist) {
-            // Persist XP to Firestore securely for authenticated users only.
-            updateUserProfile({ points: newXp }).catch(err => console.error("Failed to update XP", err));
+            // Persist XP using atomic increments to avoid overwriting concurrent updates.
+            awardPoints(amount).catch(err => console.error("Failed to award XP", err));
         }
 
         const baseId = Date.now();
