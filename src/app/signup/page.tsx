@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { sanitizeSocialLinks } from '@/lib/safe-social-url';
 
 // const ADMIN_KEY = "DEVPATH_CORE_2025"; // Removed in favor of dynamic key
 
@@ -91,6 +92,7 @@ export default function SignupPage() {
 
             // 2. Update Profile Name
             await updateProfile(user, { displayName: name });
+            const safeSocialLinks = sanitizeSocialLinks({ linkedin, github, instagram });
 
             // 3. Create Document in Firestore
             if (isAdminSignup) {
@@ -104,9 +106,7 @@ export default function SignupPage() {
                     state,
                     city,
                     district,
-                    linkedin,
-                    github,
-                    instagram,
+                    ...safeSocialLinks,
                     // Preserve existing fields if any (merge is true by default for setDoc if we use { merge: true } but here we want to overwrite/add)
                     // Actually, let's use merge to not lose seeded data like role/name if they match
                 }, { merge: true });
@@ -120,9 +120,7 @@ export default function SignupPage() {
                     state,
                     city,
                     district,
-                    linkedin,
-                    github,
-                    instagram,
+                    ...safeSocialLinks,
                     role: 'member',
                     createdAt: new Date().toISOString(),
                     xp: 0,
