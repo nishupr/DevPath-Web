@@ -9,14 +9,14 @@ export function useGamification(userId: string) {
 
   useEffect(() => {
     if (!userId) return;
-    getDoc(doc(db, "users", userId)).then(snap => setProfile(snap.data()));
+    getDoc(doc(db, "members", userId)).then(snap => setProfile(snap.data()));
   }, [userId]);
 
   async function awardXP(action: keyof typeof XP_VALUES) {
     const xp = XP_VALUES[action];
-    const ref = doc(db, "users", userId);
+    const ref = doc(db, "members", userId);
     await updateDoc(ref, {
-      xp: increment(xp),
+      points: increment(xp),
       activityDates: arrayUnion(todayString()),
     });
   }
