@@ -33,6 +33,7 @@ export default function DiscussionViewClient() {
     const [replies, setReplies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [newReply, setNewReply] = useState('');
+    const [replyTab, setReplyTab] = useState<'write' | 'preview'>('write');
     const [submitting, setSubmitting] = useState(false);
     const [reactions, setReactions] = useState<Record<string, string[]>>({}); // { emoji: [userIds] }
     const [showReactionPicker, setShowReactionPicker] = useState(false);
@@ -106,6 +107,7 @@ export default function DiscussionViewClient() {
             });
 
             setNewReply('');
+            setReplyTab('write');
         } catch (error) {
             console.error("Error adding reply:", error);
             alert("Failed to post reply.");
@@ -286,14 +288,44 @@ export default function DiscussionViewClient() {
                     {/* Reply Input */}
                     {user ? (
                         <form onSubmit={handleReply} className="bg-card border border-border rounded-xl p-4 mt-8">
-                            <h4 className="font-semibold mb-4">Leave a reply</h4>
-                            <textarea
-                                value={newReply}
-                                onChange={(e) => setNewReply(e.target.value)}
-                                className="w-full bg-background border border-border rounded-lg px-4 py-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y mb-4"
-                                placeholder="Write your reply... (Markdown supported)"
-                                required
-                            />
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-semibold">Leave a reply</h4>
+                                <div className="flex bg-muted rounded-lg p-1">
+                                    <button aria-label="Action button" 
+                                        type="button"
+                                        onClick={() => setReplyTab('write')}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${replyTab === 'write' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                    >
+                                        Write
+                                    </button>
+                                    <button aria-label="Action button" 
+                                        type="button"
+                                        onClick={() => setReplyTab('preview')}
+                                        className={`px-3 py-1 text-xs rounded-md transition-all ${replyTab === 'preview' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                    >
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                            {replyTab === 'write' ? (
+                                <textarea
+                                    value={newReply}
+                                    onChange={(e) => setNewReply(e.target.value)}
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y mb-4"
+                                    placeholder="Write your reply... (Markdown supported)"
+                                    required
+                                />
+                            ) : (
+                                <div className="w-full bg-background border border-border rounded-lg px-4 py-3 min-h-[100px] mb-4 prose prose-invert max-w-none text-sm overflow-y-auto">
+                                    {newReply ? (
+                                        <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+                                            {DOMPurify.sanitize(newReply)}
+                                        </ReactMarkdown>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">Nothing to preview</span>
+                                    )}
+                                </div>
+                            )}
                             <div className="flex justify-end">
                                 <button aria-label="Action button" 
                                     type="submit"
