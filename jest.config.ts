@@ -8,7 +8,7 @@ const config: Config = {
     '\\.css$': '<rootDir>/tests/styleMock.js',
   },
   transform: {
-    '^.+\\.(ts|tsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx)$': ['babel-jest', { configFile: './babel.config.jest.js' }],
   },
 };
 

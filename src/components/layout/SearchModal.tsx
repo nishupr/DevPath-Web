@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, FileText, ChevronRight } from "lucide-react";
 import { useSearchOpen, useSetSearchOpen } from "@/stores/ui-store";
-import { searchArticles, SearchResult } from "@/utils/wikiSearch";
+import { searchArticles } from "@/utils/wikiSearch";
 import { wikiSearchIndex } from "@/data/wikiSearchIndex";
 import styles from "./SearchModal.module.css";
 
@@ -42,13 +42,15 @@ export default function SearchModal() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isSearchOpen, setSearchOpen]);
 
+    const wasOpenRef = useRef(false);
     useEffect(() => {
-        if (isSearchOpen) {
-            setQuery("");
+        if (isSearchOpen && !wasOpenRef.current) {
             setTimeout(() => {
+                setQuery("");
                 inputRef.current?.focus();
-            }, 100);
+            }, 0);
         }
+        wasOpenRef.current = isSearchOpen;
     }, [isSearchOpen]);
 
     const wikiResults = useMemo(() => {
