@@ -13,6 +13,7 @@ import RouteAwareChrome from '@/components/layout/RouteAwareChrome';
 import 'github-markdown-css/github-markdown.css';
 import PageTrackerInit from '@/components/PageTrackerInit';
 import "./globals.css";
+import "@/styles/resume-print.css";
 
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
