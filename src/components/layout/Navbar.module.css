@@ -198,11 +198,10 @@
   outline-offset: 2px;
 }
 
-
-.navLink[aria-current="page"] {
-    color: var(--primary);
-    font-weight: 600;
-    background: rgb(128, 171, 240);
+.navLink[aria-current='page'] {
+  color: var(--primary);
+  font-weight: 600;
+  background: rgb(128, 171, 240);
 }
 
 /* Mobile Menu Backdrop */
@@ -380,7 +379,7 @@
   .navbar {
     padding: 0 16px;
     height: 60px;
-    background: rgba(15, 23, 42, 0.88);
+    background: rgba(10, 10, 10, 0.6);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
