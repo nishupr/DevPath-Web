@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       setError(
         err.code === 'auth/user-not-found'
           ? 'No account found with this email.'
-          : 'Failed to send reset email.'
+          : `Failed to send reset email: ${err.message || err.code}`
       );
     }
   };

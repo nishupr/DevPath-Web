@@ -24,10 +24,6 @@ export default function Home() {
 
         <ErrorBoundary>
           <SectionEntrance>
-            <Sponsors />
-          </SectionEntrance>
-
-          <SectionEntrance>
             <Mission />
           </SectionEntrance>
 
@@ -37,6 +33,10 @@ export default function Home() {
 
           <SectionEntrance>
             <PastCollaborations />
+          </SectionEntrance>
+
+          <SectionEntrance>
+            <Sponsors />
           </SectionEntrance>
         </ErrorBoundary>
 

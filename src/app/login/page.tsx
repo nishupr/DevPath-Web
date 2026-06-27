@@ -114,18 +114,10 @@ export default function LoginPage() {
 
     try {
       await login(normalizedEmail, password);
-      const adminDoc = await getDoc(doc(db, 'admins', normalizedEmail));
 
       setFailedAttempts(0);
       showSuccess('Signed in successfully.');
-
-      if (adminDoc.exists()) {
-        showInfo('Admin account detected. Please complete verification.');
-        setShowAdminKeyModal(true);
-      } else {
-        setIsCheckingAdmin(false);
-        router.push('/profile');
-      }
+      setIsCheckingAdmin(false);
     } catch (err: any) {
       console.error(err);
 
@@ -189,21 +181,7 @@ export default function LoginPage() {
         `Signed in with ${providerName === 'google' ? 'Google' : 'GitHub'}.`
       );
 
-      if (!signedInEmail) {
-        setIsCheckingAdmin(false);
-        router.push('/profile');
-        return;
-      }
-
-      const adminDoc = await getDoc(doc(db, 'admins', signedInEmail));
-
-      if (adminDoc.exists()) {
-        showInfo('Admin account detected. Please complete verification.');
-        setShowAdminKeyModal(true);
-      } else {
-        setIsCheckingAdmin(false);
-        router.push('/profile');
-      }
+      setIsCheckingAdmin(false);
     } catch (err: any) {
       console.error(err);
       const message =

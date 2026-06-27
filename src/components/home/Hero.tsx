@@ -9,10 +9,6 @@ import styles from './Hero.module.css';
 
 
 const LatestEventsHighlight = dynamic(() => import('./LatestEventsHighlight'));
-const InternshipCalendarCard = dynamic(
-  () => import('./InternshipCalendarCard')
-);
-const CertificateCard = dynamic(() => import('./CertificateCard'));
 import { useEffect, useState, useRef } from 'react';
 
 const HeaderScene = dynamic(() => import('@/components/3d/HeaderScene'), {
@@ -190,10 +186,8 @@ export default function Hero() {
       </div>
 
       {/* Featured Content Grid */}
-      <div className="w-full px-2 mt-12 grid grid-cols-1 lg:grid-cols-2 gap-4 relative z-10">
+      <div className="w-full px-2 mt-12 grid grid-cols-1 gap-4 relative z-10">
         <LatestEventsHighlight className="w-full mt-0 mb-0" />
-        <InternshipCalendarCard />
-        <CertificateCard />
       </div>
     </section>
   );

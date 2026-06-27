@@ -193,106 +193,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             showInCommunity: true,
           };
 
-          // Check if user is admin (only if email exists)
-          if (firebaseUser.email) {
-            try {
-              // 1. Try by Email
-              const adminDocRef = doc(
-                db,
-                'admins',
-                firebaseUser.email.toLowerCase()
-              );
-              const adminDoc = await getDoc(adminDocRef);
-              if (adminDoc.exists()) {
-                role = 'admin';
-                userData = {
-                  ...userData,
-                  ...adminDoc.data(),
-                  docId: adminDoc.id,
-                };
-              } else {
-                // 2. Try by UID (Fallback)
-                const adminUidDocRef = doc(db, 'admins', firebaseUser.uid);
-                const adminUidDoc = await getDoc(adminUidDocRef);
-                if (adminUidDoc.exists()) {
-                  role = 'admin';
-                  userData = {
-                    ...userData,
-                    ...adminUidDoc.data(),
-                    docId: adminUidDoc.id,
-                  };
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching admin data:', error);
-              // Fallback to member if admin fetch fails
+          try {
+            const adminEmailRef = firebaseUser.email
+              ? doc(db, 'admins', firebaseUser.email.toLowerCase())
+              : null;
+            const adminUidRef = doc(db, 'admins', firebaseUser.uid);
+            const memberRef = doc(db, 'members', firebaseUser.uid);
+
+            const [adminEmailSnap, adminUidSnap, memberSnap] =
+              await Promise.all([
+                adminEmailRef ? getDoc(adminEmailRef) : Promise.resolve(null),
+                getDoc(adminUidRef),
+                getDoc(memberRef),
+              ]);
+
+            if (adminEmailSnap && adminEmailSnap.exists()) {
+              role = 'admin';
+              userData = {
+                ...userData,
+                ...adminEmailSnap.data(),
+                docId: adminEmailSnap.id,
+              };
+            } else if (adminUidSnap.exists()) {
+              role = 'admin';
+              userData = {
+                ...userData,
+                ...adminUidSnap.data(),
+                docId: adminUidSnap.id,
+              };
+            } else if (memberSnap.exists()) {
+              // Valid member - Load data
+              userData = { ...userData, ...memberSnap.data() };
+            } else {
+              // New Member - Initialize Full Profile
+              const defaultUserData = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || '',
+                photoURL: firebaseUser.photoURL || '',
+                role: 'member' as const,
+                points: 0,
+                streak: 0,
+                level: 0,
+                badges: [],
+                achievements: [],
+                completedQuizzes: [],
+                claimedRewards: [],
+                followers: [],
+                following: [],
+                loginDates: [],
+                privacySettings: {
+                  showMobile: false,
+                  showLocation: true,
+                  showEmail: false,
+                  showProjects: true,
+                  showRewards: true,
+                  isPublic: true,
+                  showInCommunity: true,
+                },
+                preferences: {
+                  theme: 'dark' as const,
+                },
+                githubStats: {
+                  connected: false,
+                  repos: 0,
+                  stars: 0,
+                  followers: 0,
+                  contributions: 0,
+                },
+                bio: '',
+                city: '',
+                state: '',
+                socialLinks: {},
+                createdAt: new Date().toISOString(),
+              };
+
+              // Create the new member document
+              await setDoc(memberRef, defaultUserData);
+              userData = { ...userData, ...defaultUserData } as any;
             }
-          }
-
-          // If not admin, check member
-          if (role === 'member') {
-            try {
-              // Check for member by UID (New Standard)
-              const memberDocRef = doc(db, 'members', firebaseUser.uid);
-              const memberDoc = await getDoc(memberDocRef);
-
-              if (memberDoc.exists()) {
-                // Valid member - Load data
-                userData = { ...userData, ...memberDoc.data() };
-              } else {
-                // New Member - Initialize Full Profile
-                const defaultUserData = {
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email,
-                  name: firebaseUser.displayName || '',
-                  photoURL: firebaseUser.photoURL || '',
-                  role: 'member' as const,
-                  points: 0,
-                  streak: 0,
-                  level: 0,
-                  badges: [],
-                  achievements: [],
-                  completedQuizzes: [],
-                  claimedRewards: [],
-                  followers: [],
-                  following: [],
-                  loginDates: [],
-                  privacySettings: {
-                    showMobile: false,
-                    showLocation: true,
-                    showEmail: false,
-                    showProjects: true,
-                    showRewards: true,
-                    isPublic: true,
-                    showInCommunity: true,
-                  },
-                  preferences: {
-                    theme: 'dark' as const,
-                  },
-                  githubStats: {
-                    connected: false,
-                    repos: 0,
-                    stars: 0,
-                    followers: 0,
-                    contributions: 0,
-                  },
-                  bio: '',
-                  city: '',
-                  state: '',
-                  socialLinks: {},
-                  createdAt: new Date().toISOString(),
-                };
-
-                // Create the new member document
-                await setDoc(memberDocRef, defaultUserData);
-                userData = { ...userData, ...defaultUserData } as any;
-              }
-            } catch (error) {
-              console.error('Error fetching/creating member data:', error);
-              setUser(null);
-              setIsLoading(false);
-              return; // Stop execution on critical failure to prevent hanging
-            }
+          } catch (error) {
+            console.error('Error fetching/creating user data:', error);
+            setUser(null);
+            setIsLoading(false);
+            return; // Stop execution on critical failure to prevent hanging
           }
 
           // Setup Real-time Listener
@@ -476,29 +460,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
 
-    // Update Firestore with Session ID
+    // Update Firestore with Session ID in background to not block login
     if (userCredential.user) {
-      const { doc, getDoc, setDoc } = await import('firebase/firestore');
+      import('firebase/firestore')
+        .then(async ({ doc, getDoc, setDoc }) => {
+          // Check Admin
+          const adminRef = doc(db, 'admins', email.toLowerCase());
+          const adminSnap = await getDoc(adminRef);
 
-      // Check Admin
-      const adminRef = doc(db, 'admins', email.toLowerCase());
-      const adminSnap = await getDoc(adminRef);
-
-      if (adminSnap.exists()) {
-        // Sync UID to Admin doc to ensure client.tsx can find it by UID query
-        await setDoc(
-          adminRef,
-          {
-            sessionId,
-            uid: userCredential.user.uid,
-          },
-          { merge: true }
-        );
-      } else {
-        // Check Member
-        const memberRef = doc(db, 'members', userCredential.user.uid);
-        await setDoc(memberRef, { sessionId }, { merge: true });
-      }
+          if (adminSnap.exists()) {
+            // Sync UID to Admin doc to ensure client.tsx can find it by UID query
+            await setDoc(
+              adminRef,
+              {
+                sessionId,
+                uid: userCredential.user.uid,
+              },
+              { merge: true }
+            );
+          } else {
+            // Check Member
+            const memberRef = doc(db, 'members', userCredential.user.uid);
+            await setDoc(memberRef, { sessionId }, { merge: true });
+          }
+        })
+        .catch(console.error);
     }
   };
 
