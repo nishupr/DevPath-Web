@@ -29,6 +29,8 @@ const eslintConfig = defineConfig([
     'build/**',
     'next-env.d.ts',
     'public/**',
+    // Migrated from the legacy .eslintignore file (flat config no longer reads it):
+    'backend/**',
   ]),
 ]);
 
