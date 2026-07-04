@@ -21,6 +21,8 @@ import {
   Layout,
   Rocket,
   Database,
+  Check,
+  Copy,
 } from 'lucide-react';
 import { PremiumCard } from '../ui/PremiumCard';
 import styles from './Resources.module.css';
@@ -354,59 +356,90 @@ const categoryConfig: Record<string, { icon: any; color: string }> = {
 };
 
 export default function ResourcesTabs() {
-    // Custom Auth Fallback
-    const { user } = useAuth() || { user: { uid: 'test-user-id' } }; 
+  // Custom Auth Fallback
+  const { user } = useAuth() || { user: { uid: 'test-user-id' } };
 
-    // 5 Main Sections - Reordered: Roadmaps First
-    const mainSections = [
-        { id: 'roadmaps', label: 'Roadmaps', icon: <Map size={18} /> },
-        { id: 'ai-prompts', label: 'AI Prompts', icon: <Brain size={18} /> },
-        { id: 'internships', label: 'Internships', icon: <Briefcase size={18} /> },
-        { id: 'learning', label: 'Learning', icon: <GraduationCap size={18} /> },
-        { id: 'practice', label: 'Practice', icon: <Code size={18} /> },
-    ];
+  // 5 Main Sections - Reordered: Roadmaps First
+  const mainSections = [
+    { id: 'roadmaps', label: 'Roadmaps', icon: <Map size={18} /> },
+    { id: 'ai-prompts', label: 'AI Prompts', icon: <Brain size={18} /> },
+    { id: 'internships', label: 'Internships', icon: <Briefcase size={18} /> },
+    { id: 'learning', label: 'Learning', icon: <GraduationCap size={18} /> },
+    { id: 'practice', label: 'Practice', icon: <Code size={18} /> },
+  ];
 
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-    const [activeMainTab, setActiveMainTab] = useState('roadmaps');
-    const ITEMS_PER_PAGE = 2;
-    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-    
-    useEffect(() => {
-        setVisibleCount(ITEMS_PER_PAGE);
-    }, [activeMainTab]);
-    const [activeSubTab, setActiveSubTab] = useState(aiPromptsCategories[0]);
-    const [isInternshipModalOpen, setIsInternshipModalOpen] = useState(false);
-    const [isRoadmapModalOpen, setIsRoadmapModalOpen] = useState(false);
-    const [isMindsetModalOpen, setIsMindsetModalOpen] = useState(false);
-    const [activeRoadmap, setActiveRoadmap] = useState<any>(null);
+  const [activeMainTab, setActiveMainTab] = useState('roadmaps');
+  const ITEMS_PER_PAGE = 2;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
-    // Progress State mapping roadmap IDs to completion percentages
-    const [progressData, setProgressData] = useState<Record<string, number>>({});
-    const [isLoading, setIsLoading] = useState(false);
-    const observerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [activeMainTab]);
+  const [activeSubTab, setActiveSubTab] = useState(aiPromptsCategories[0]);
+  const [isInternshipModalOpen, setIsInternshipModalOpen] = useState(false);
+  const [isRoadmapModalOpen, setIsRoadmapModalOpen] = useState(false);
+  const [isMindsetModalOpen, setIsMindsetModalOpen] = useState(false);
+  const [activeRoadmap, setActiveRoadmap] = useState<any>(null);
 
-    useEffect(() => {
-        // Sync states on mount from URL parameters
-        const tab = searchParams.get('tab');
-        if (tab) {
-            setActiveMainTab(tab);
-        }
-        const subtab = searchParams.get('subtab');
-        if (subtab) {
-            setActiveSubTab(subtab);
-        }
-    }, []);
+  // Progress State mapping roadmap IDs to completion percentages
+  const [progressData, setProgressData] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const observerRef = useRef<HTMLDivElement>(null);
+  // Tracks which prompt's example text was just copied, so we can show a
+  // temporary "Copied!" confirmation on that specific card.
+  const [copiedPromptTitle, setCopiedPromptTitle] = useState<string | null>(
+    null
+  );
+  const copyResetTimerRef = useRef<number | null>(null);
 
-    const updateQueryParam = (key: string, value: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set(key, value);
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current !== null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
     };
+  }, []);
 
-    useEffect(() => {
+  const handleCopyPrompt = async (title: string, example: string) => {
+    try {
+      await navigator.clipboard.writeText(example);
+      setCopiedPromptTitle(title);
+
+      if (copyResetTimerRef.current !== null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+
+      copyResetTimerRef.current = window.setTimeout(() => {
+        setCopiedPromptTitle(null);
+      }, 2000);
+    } catch {
+      // Clipboard access can fail in unsupported or insecure contexts.
+    }
+  };
+
+  useEffect(() => {
+    // Sync states on mount from URL parameters
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveMainTab(tab);
+    }
+    const subtab = searchParams.get('subtab');
+    if (subtab) {
+      setActiveSubTab(subtab);
+    }
+  }, []);
+
+  const updateQueryParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(key, value);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
     if (activeMainTab !== 'roadmaps') return;
 
     const observer = new IntersectionObserver(
@@ -627,16 +660,29 @@ export default function ResourcesTabs() {
 
                       <div className="mt-auto pt-4 border-t border-white/5">
                         <div className="bg-black/40 rounded-lg p-3 text-xs text-slate-300 font-mono border border-white/5 relative group/code">
-                          <div className="absolute right-2 top-2 opacity-0 group-hover/code:opacity-100 transition-opacity">
-                            <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded">
-                              Copy
-                            </span>
-                          </div>
+                          <button
+                            type="button"
+                            aria-label="Copy prompt to clipboard"
+                            onClick={() =>
+                              handleCopyPrompt(prompt.title, prompt.example)
+                            }
+                            className="absolute right-2 top-2 z-10 flex items-center gap-1 text-[10px] bg-primary/20 text-primary px-2 py-1 rounded opacity-0 group-hover/code:opacity-100 group-focus-within/code:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                          >
+                            {copiedPromptTitle === prompt.title ? (
+                              <>
+                                <Check size={12} />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={12} />
+                                Copy
+                              </>
+                            )}
+                          </button>
                           {prompt.example}
                         </div>
-                        <button
-                          className="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 group/btn"
-                        >
+                        <button className="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 group/btn">
                           Try this Prompt
                           <Terminal
                             size={14}
