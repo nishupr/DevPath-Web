@@ -841,6 +841,7 @@ function ProfileContent({ uid }: { uid?: string }) {
                                 aria-label="Link"
                                 href={event.repo.url}
                                 target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-primary hover:underline font-medium"
                               >
                                 {event.repo.name}
