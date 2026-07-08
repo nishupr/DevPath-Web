@@ -1,4 +1,5 @@
 'use client';
+import { AUTH_MESSAGES } from '@/lib/constants';
 const AVATAR_FALLBACK =
   process.env.NEXT_PUBLIC_AVATAR_FALLBACK_URL ?? 'https://ui-avatars.com/api';
 import { useState, useEffect, useRef } from 'react';
@@ -408,7 +409,7 @@ export default function UserProfile() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Please login to view your profile.</p>
+        <p>{AUTH_MESSAGES.LOGIN_TO_VIEW_PROFILE}</p>
       </div>
     );
   }

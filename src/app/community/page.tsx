@@ -1,5 +1,6 @@
 'use client';
 
+import { AUTH_MESSAGES } from '@/lib/constants';
 import Fuse from 'fuse.js';
 import ReviewsSection from './ReviewsSection';
 import { useState, useEffect, useMemo } from 'react';
@@ -138,7 +139,7 @@ export default function CommunityPage() {
               <button
                 onClick={() => {
                   if (!user) {
-                    alert('Please login to start a discussion.');
+                    alert(AUTH_MESSAGES.LOGIN_TO_START_DISCUSSION);
                     return;
                   }
                   setShowCreateModal(true);
